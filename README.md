@@ -1,2 +1,2 @@
 # redes1-trab2
-Implementação do jogo "THE GREAT DALMUTI" em uma rede em anel.
+Implementação em rede em anel do jogo "The Great Dalmuti"
