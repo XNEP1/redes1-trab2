@@ -19,6 +19,7 @@ my_addr = socket.gethostbyname(socket.gethostname())
 def receiveManager(UDPsocket):
         while(True):
             (data_str, ip_addr) = recv_from(UDPsocket, PORT)
+            data = json.loads(data_str.decode("utf-8"))
             if data["Event"] == "Token":
                 # Pega permissao de enviar mensagens
                 break
@@ -70,6 +71,12 @@ def recv_from (socket, buffer_size):
     (data_str, ip_addr) = socket.recvfrom(buffer_size)
     return (data_str, ip_addr) # retorna tupla com mensagem, e IP de origrm
 
+class Eventos(Enum):
+    TOKEN = 0
+    DESLIGAMENTO = 1
+    JOGADA = 2
+    VITORIA = 3
+
 class Estados(Enum):
     ESPERANDO = 0  # Esperando todo mundo se conectar
     TURNO_DE_OUTRO = 1
@@ -78,13 +85,17 @@ class Estados(Enum):
     DERROTA = 4
     FIM_DE_JOGO = 5
 
-class Jogo:
+class Carta:
+    def __init__(self, valor) -> None:
+        self.valor = valor
 
+class Jogo:
 
     def __init__(self) -> None:
         self.estado = Estados.ESPERANDO
         self.turno = ""
         self.minhaMao = []
+        self.registro = []
 
 def inicializa_jogo ():
     pass
