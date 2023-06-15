@@ -54,8 +54,9 @@ int create_connection (char *local_ip_addr) {
     return socket_fd;
 }
 
-int send_msg () {
-    send();
+int send_msg_to (int socket_fd, void *msg, size_t msg_length) {
+    
+    send(socket_fd, msg, msg_length, 0);
     
     return 0;
 }
