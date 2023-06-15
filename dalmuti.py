@@ -5,14 +5,51 @@ import socket # importa o módulo de sockets
 # Será lido do arquivo dalmuti.ini
 hostnameFrom = 'h1'  # Hostname de quem você recebe. Será convertido para o endereço IP
 hostnameTo = 'h1'  # Hostname de quem você envia. Será convertido para o endereço IP
+PORT = 7304
+have_token = False
+sendLock = Lock()
+messageQueue = queue.Queue()
+my_addr = socket.gethostbyname(socket.gethostname())
+
+def receiveManager(UDPsocket):
+        while(True):
+            (data_str, ip_addr) = recv_from(UDPsocket, PORT)
+            if data["Event"] == "Token":
+                # Pega permissao de enviar mensagens
+                break
+
+            if data["Event"] == "Desligamento":
+                # Mensagem especial de desligamento da rede
+                # Passa pro proximo e da exit
+                break
+
+            if data["To"] == my_addr:
+                # Se a thread principal nao funcionar,
+                # essa thread trava aqui e a rede em anel trava
+                messageQueue.put(data_str, block=True)
+
+            if data["From"] == my_addr:
+                # Remove do anel
+                sendLock.release()
+            else:
+                send_to(UDPsocket, data_str, hostnameTo, PORT)
+
+def enviar(data):
+    if have_token == False:
+        return False
+    send_to(UDPsocket, json.dumps(data), next_adrr, PORT)
+    sendLock.acquire()
+    return True
+
+def receber():
+    return messageQueue.get(block=True)
 
 def setup_connection (porta):
     #
     #
     #
-    ip = socket.gethostbyname(socket.gethostname())
     UDPsocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-    UDPsocket.bind((ip, porta))
+    UDPsocket.bind((my_addr, porta))
     return UDPsocket
 
 
