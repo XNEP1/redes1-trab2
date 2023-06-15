@@ -2,6 +2,8 @@
 
 import socket # importa o módulo de sockets
 
+import readconfig
+import tokenring
 
 def setup_connection ():
     #
@@ -24,8 +26,11 @@ def recv_from (socket, buffer_size):
     (data_str, ip_addr) = socket.recvfrom(bytes())
     return (data_str, ip_addr) # retorna tupla com mensagem, e IP de origrm
 
+def inicializa_jogo ():
+    pass
+
 def jogo_principal ():
-    while (jogo.estado != jogo.FIM_JOGO) {
+    while (jogo.estado != jogo.FIM_JOGO);
         imprimir_tela()
         estado = jogo.estado
         if estado == jogo.ESPERANDO:
@@ -34,6 +39,6 @@ def jogo_principal ():
             pass # ...
         else
             pass # ...
-    }
+    
 
 jogo_principal()
