@@ -71,7 +71,13 @@ def inicializa_jogo ():
     pass
 
 def jogo_principal ():
-    while (jogo.estado != jogo.FIM_JOGO);
+    token_ring = token_ring_init(device, hostnameFrom, hostnameTo, porta)
+    jogo = inicializa_jogo()
+    data = {}
+    
+    recebedor = {} #thread.init(repassador_de_mensagens, token_ring)
+    
+    while (jogo.estado != jogo.FIM_JOGO):
         imprimir_tela()
         estado = jogo.estado
         if estado == jogo.ESPERANDO:
