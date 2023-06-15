@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 
 import socket # importa o módulo de sockets
-import thread
+from threading import *
 from enum import Enum
+from queue import *
+import json
 
 import readconfig
 import tokenring
@@ -13,7 +15,7 @@ hostnameTo = 'h1'  # Hostname de quem você envia. Será convertido para o ender
 PORT = 7304
 have_token = False
 sendLock = Lock()
-messageQueue = queue.Queue()
+messageQueue = Queue()
 my_addr = socket.gethostbyname(socket.gethostname())
 
 def receiveManager(UDPsocket):
@@ -71,6 +73,17 @@ def recv_from (socket, buffer_size):
     (data_str, ip_addr) = socket.recvfrom(buffer_size)
     return (data_str, ip_addr) # retorna tupla com mensagem, e IP de origrm
 
+class TokenRing:
+    def __init__(self, hostnameFrom, hostnameTo, port=7304):
+        self.hostnameFrom = hostnameFrom
+        self.hostnameTo = hostnameTo
+        self.port = port
+        self.UDPsocket = __setup_connection()
+
+    @staticmethod
+    def __setup_connection()
+        
+
 class Eventos(Enum):
     TOKEN = 0
     DESLIGAMENTO = 1
@@ -86,12 +99,12 @@ class Estados(Enum):
     FIM_DE_JOGO = 5
 
 class Carta:
-    def __init__(self, valor) -> None:
+    def __init__(self, valor):
         self.valor = valor
 
 class Jogo:
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.estado = Estados.ESPERANDO
         self.turno = ""
         self.minhaMao = []
