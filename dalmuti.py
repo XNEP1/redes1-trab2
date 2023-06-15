@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 import socket # importa o módulo de sockets
+import thread
+from enum import Enum
 
 import readconfig
 import tokenring
@@ -24,7 +26,8 @@ def receiveManager(UDPsocket):
             if data["Event"] == "Desligamento":
                 # Mensagem especial de desligamento da rede
                 # Passa pro proximo e da exit
-                break
+                # função_exit(0)
+                pass
 
             if data["To"] == my_addr:
                 # Se a thread principal nao funcionar,
@@ -67,6 +70,22 @@ def recv_from (socket, buffer_size):
     (data_str, ip_addr) = socket.recvfrom(buffer_size)
     return (data_str, ip_addr) # retorna tupla com mensagem, e IP de origrm
 
+class Estados(Enum):
+    ESPERANDO = 0  # Esperando todo mundo se conectar
+    TURNO_DE_OUTRO = 1
+    MEU_TURNO = 2
+    VITORIA = 3
+    DERROTA = 4
+    FIM_DE_JOGO = 5
+
+class Jogo:
+
+
+    def __init__(self) -> None:
+        self.estado = Estados.ESPERANDO
+        self.turno = ""
+        self.minhaMao = []
+
 def inicializa_jogo ():
     pass
 
@@ -78,7 +97,7 @@ def jogo_principal ():
             pass # ...
         elif estado == jogo.TURNO_OUTRO:
             pass # ...
-        else
+        else:
             pass # ...
 
 # Exemplo: SERVIDOR RECEBENDO
