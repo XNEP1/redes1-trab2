@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
-from threading import *
 from enum import Enum
+import socket
 from random import shuffle
 import sys
 import time
 
-import readconfig
-from tokenring import *
+from readconfig import read_config
+from tokenring import TokenRing
 
 def mensagem(Evento, Info = {}):
     message = {
@@ -150,7 +150,7 @@ def jogo_principal ():
     proximo_no_anel_config = {}
     baralho = []
 
-    jogadores = readconfig("dalmuti.ini")
+    jogadores = read_config("dalmuti.ini")
     jogadoresIndex = list(jogadores)
     quantidadeJogadores = len(jogadoresIndex)
     for i in jogadoresIndex[:-1]:

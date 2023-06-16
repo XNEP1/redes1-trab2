@@ -2,8 +2,8 @@ import socket
 import json
 import sys
 from enum import Enum
-from queue import *
-from threading import *
+from queue import Queue
+from threading import Thread, BoundedSemaphore
 
 class Type(Enum):
     TOKEN = 0
@@ -64,7 +64,7 @@ class TokenRing:
         self.have_token = False
         return
 
-    def __setup_connection(self) -> socket:
+    def __setup_connection(self):
         UDPsocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
         UDPsocket.bind((self.my_addr, self.port))
         return UDPsocket
