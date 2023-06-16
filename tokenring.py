@@ -77,8 +77,12 @@ class TokenRing:
     def __recvManager(self):
         while(True):
             (data, recv_addr) = self.__recv()
+            print(data["Type"])
+            print(data["From"])
+            print(data["To"])
             if recv_addr != self.from_addr:
                 # Ignora
+                print("IGNORADO")
                 continue
 
             if data["Type"] == Type.TOKEN:
