@@ -26,7 +26,7 @@ class TokenRing:
             self.from_addr = socket.gethostbyname(self.hostnameFrom)
             self.to_addr = socket.gethostbyname(self.hostnameTo)
         except Exception as e:
-            pass
+            pass #! [[[ PLEASEEE FIX MEEEE - i.e. put some logic in here ]]]
         self.port = port
         self.sendSemaphore = BoundedSemaphore(value=0)
         self.messageQueue = Queue()
