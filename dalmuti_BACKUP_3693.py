@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+<<<<<<< HEAD
 import socket # importa o módulo de sockets
 from threading import *
 from enum import Enum
@@ -71,6 +72,20 @@ def recv_from (socket, buffer_size):
     #
     (data_str, ip_addr) = socket.recvfrom(buffer_size)
     return (data_str, ip_addr) # retorna tupla com mensagem, e IP de origrm
+=======
+from threading import *
+from enum import Enum
+import sys
+
+import readconfig
+from tokenring import *
+        
+class Eventos(Enum):
+    TOKEN = 0
+    DESLIGAMENTO = 1
+    JOGADA = 2
+    VITORIA = 3
+>>>>>>> 492b14f862de517d697746048e71f0d729d1cf4d
 
 class Estados(Enum):
     ESPERANDO = 0  # Esperando todo mundo se conectar

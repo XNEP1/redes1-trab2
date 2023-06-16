@@ -80,23 +80,19 @@ class Estados(Enum):
     DERROTA = 4
     FIM_DE_JOGO = 5
 
-class Carta:
-    def __init__(self, valor):
-        self.valor = valor
-
 class Jogo:
 
-    def __init__(self):
+
+    def __init__(self) -> None:
         self.estado = Estados.ESPERANDO
         self.turno = ""
         self.minhaMao = []
-        self.registro = []
 
 def inicializa_jogo ():
     return Jogo()
 
 def jogo_principal ():
-    tokenRing = TokenRing(From="h1", To="h2")
+    token_ring = token_ring_init(device, hostnameFrom, hostnameTo, porta)
     jogo = inicializa_jogo()
     data = {}
     

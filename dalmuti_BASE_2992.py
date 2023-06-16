@@ -1,13 +1,11 @@
 #!/usr/bin/python3
 
 import socket # importa o módulo de sockets
-from threading import *
+import thread
 from enum import Enum
-from queue import *
 
 import readconfig
 import tokenring
-
 
 # Será lido do arquivo dalmuti.ini
 hostnameFrom = 'h1'  # Hostname de quem você recebe. Será convertido para o endereço IP
@@ -15,7 +13,7 @@ hostnameTo = 'h1'  # Hostname de quem você envia. Será convertido para o ender
 PORT = 7304
 have_token = False
 sendLock = Lock()
-messageQueue = Queue()
+messageQueue = queue.Queue()
 my_addr = socket.gethostbyname(socket.gethostname())
 
 def receiveManager(UDPsocket):
@@ -80,23 +78,19 @@ class Estados(Enum):
     DERROTA = 4
     FIM_DE_JOGO = 5
 
-class Carta:
-    def __init__(self, valor):
-        self.valor = valor
-
 class Jogo:
 
-    def __init__(self):
+
+    def __init__(self) -> None:
         self.estado = Estados.ESPERANDO
         self.turno = ""
         self.minhaMao = []
-        self.registro = []
 
 def inicializa_jogo ():
-    return Jogo()
+    pass
 
 def jogo_principal ():
-    tokenRing = TokenRing(From="h1", To="h2")
+    token_ring = token_ring_init(device, hostnameFrom, hostnameTo, porta)
     jogo = inicializa_jogo()
     data = {}
     
@@ -105,17 +99,9 @@ def jogo_principal ():
     while (jogo.estado != jogo.FIM_JOGO):
         imprimir_tela()
         estado = jogo.estado
-        if estado == Estados.ESPERANDO:
+        if estado == jogo.ESPERANDO:
             pass # ...
-        elif estado == Estados.TURNO_OUTRO:
-            pass # ...
-        elif estado == Estados.MEU_TURNO:
-            pass # ...
-        elif estado == Estados.VITORIA:
-            pass # ...
-        elif estado == Estados.DERROTA:
-            pass # ...
-        elif estado == Estados.FIM_DE_JOGO:
+        elif estado == jogo.TURNO_OUTRO:
             pass # ...
         else:
             pass # ...
