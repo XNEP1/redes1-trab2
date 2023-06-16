@@ -20,9 +20,11 @@ def imprimir_tela():
 
 def gerar_baralho():
     baralho = []
-    for i in range(1,12):
-        for n in range(1, i):
+    for i in range(1,13):
+        for n in range(1, i+1):
             baralho.insert(0, i)
+    baralho.insert(0, 0)
+    baralho.insert(0, 0)
     shuffle(baralho)
     return baralho
 
@@ -94,9 +96,11 @@ def jogo_principal ():
 
 
         elif jogo.estado == Estado.TURNO_DE_OUTRO:
-            pass # ...
+            tokenRing.receber()
         elif jogo.estado == Estado.MEU_TURNO:
             pass # ...
+
+
         elif jogo.estado == Estado.VITORIA:
             pass # ...
         elif jogo.estado == Estado.DERROTA:
