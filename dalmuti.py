@@ -157,7 +157,6 @@ class Jogo:
                 options_coringa_1 = set(filter(lambda x: filtered.count(x) + 1 >= ultima_jogada[1], filtered))
             if self.minhaMao.count(13) == 2: # só aqueles com 2 coringas
                 options_coringa_2 = set(filter(lambda x: filtered.count(x) + 2 >= ultima_jogada[1], filtered))
-            print(options_coringa_1)
             n = 0
             o1 = 0 # Usados pra saber as fronteiras entre os tipos de opções
             o2 = 0
@@ -175,7 +174,6 @@ class Jogo:
             for i in options_coringa_2:
                 print(" " + str(n) + ": " + str(ultima_jogada[1] - 2) + " cartas de valor " + str(i) + " + 2 carta coringa")
                 n += 1
-            print(options_coringa_1)
             print("============================")
             print("")
             linhas = imprimir_registro(self)
@@ -199,26 +197,17 @@ class Jogo:
             qnt = ultima_jogada[1]
             coringasUsados = 0
 
-            print("(" + str(o1) + ")")
-            print("(" + str(o2) + ")")
-
             if selecionado <= o1: # Não usou coringas junto a outras cartas
                 carta = list(options)[selecionado - 1]
                 for _ in range(qnt):
                     self.minhaMao.remove(carta)
             elif selecionado > o1 and selecionado <= o2: # selecionou opção com 1 coringa
-                print(options_coringa_1)
-                print(selecionado - o1 - 1)
                 carta = list(options_coringa_1)[selecionado - o1 - 1]
                 self.minhaMao.remove(13)
                 coringasUsados = 1
                 for _ in range(qnt - 1):
                     self.minhaMao.remove(carta)
             else: # usou 2 coringas
-                print(options_coringa_2)
-                print(o1)
-                print(o2)
-                print(selecionado - o2 - 1)
                 carta = list(options_coringa_2)[selecionado - o2 - 1]
                 self.minhaMao.remove(13)
                 self.minhaMao.remove(13)
