@@ -29,6 +29,21 @@ def imprimir_suaMao(jogo):
     print(str(jogo.minhaMao)[1:-1])
     print("============================")
 
+def imprimir_registro(jogo) -> int: # linhas impressas
+    print("Registro:")
+    for r in jogo.registro:
+        if r["Acontecimento"] == Jogada.PASSOU:
+            print("{quem} passou a vez.".format(quem= r["Quem"]))
+        else:
+            (valor, qnt, coringasUsados) = r["Jogada"]
+            if coringasUsados == 0:
+                print("{quem} jogou {qnt} cartas de valor {valor}.".format(quem= r["Quem"], qnt= qnt, valor= valor))
+            elif coringasUsados == 1:
+                print("{quem} jogou {qnt} cartas de valor {valor} e mais 1 coringa.".format(quem= r["Quem"], qnt= qnt-1, valor= valor))
+            elif coringasUsados == 2:
+                print("{quem} jogou {qnt} cartas de valor {valor} e mais 2 coringa.".format(quem= r["Quem"], qnt= qnt-2, valor= valor))
+    return (1 + len(jogo.registro))
+
 def imprimir_tela(jogo):
     print("\033[H\033[J", end="", flush=True) 
     if(jogo.estado == Estado.ESPERANDO):
@@ -40,13 +55,7 @@ def imprimir_tela(jogo):
         imprimir_suaMao(jogo)
         print("Está no turno de outro jogador")
         print("Espere ele jogar")
-        print("Registro:")
-        for r in jogo.registro:
-            if r["Acontecimento"] == Jogada.PASSOU:
-                print("{quem} passou a vez.".format(quem= r["Quem"]))
-            else:
-                (valor, qnt) = r["Jogada"]
-                print("{quem} jogou {qnt} cartas de valor {valor}.".format(quem= r["Quem"], qnt= qnt, valor= valor))
+        imprimir_registro(jogo)
             # Falta o print de vitoria
     else:
         pass
@@ -56,8 +65,8 @@ def gerar_baralho():
     for i in range(1,13):
         for n in range(1, i+1):
             baralho.insert(0, i)
-    baralho.insert(0, 0)
-    baralho.insert(0, 0)
+    baralho.insert(0, 13)
+    baralho.insert(0, 13)
     shuffle(baralho)
     return baralho
 
@@ -112,7 +121,8 @@ class Jogo:
                 print("Você é o primeiro a jogar.")
                 print("")
                 print("")
-                print("\033[{subirLinhas}A\033[0K\r".format(subirLinhas=2), end="", flush=True)
+                linhas = imprimir_registro(self)
+                print("\033[{subirLinhas}A\033[0K\r".format(subirLinhas=2+linhas), end="", flush=True)
                 qnt = input("Escolha quantas cartas você irá jogar: ")
                 try:
                     qnt = int(qnt)
@@ -125,7 +135,7 @@ class Jogo:
                     time.sleep(2)
                     continue
 
-                ultima_jogada = (13, qnt)
+                ultima_jogada = (14, qnt)
                 break
 
         else:
@@ -139,16 +149,37 @@ class Jogo:
             print("")
             print("===========Opções===========")
             filtered = list(filter(lambda valor: valor < ultima_jogada[0], self.minhaMao))
-            options = set(filter(lambda x: filtered.count(x) == ultima_jogada[1], filtered))
+            options = set(filter(lambda x: filtered.count(x) >= ultima_jogada[1], filtered))
+            
+            options_coringa_1 = []
+            options_coringa_2 = []
+            if self.minhaMao.count(13) > 0: # Aqueles com 1 e 2 coringas
+                options_coringa_1 = set(filter(lambda x: filtered.count(x) + 1 >= ultima_jogada[1], filtered))
+            if self.minhaMao.count(13) == 2: # só aqueles com 2 coringas
+                options_coringa_2 = set(filter(lambda x: filtered.count(x) + 2 >= ultima_jogada[1], filtered))
+            print(options_coringa_1)
             n = 0
+            o1 = 0 # Usados pra saber as fronteiras entre os tipos de opções
+            o2 = 0
             print(" " + str(n) + ": Passar a vez" )
             n += 1
             for i in options:
                 print(" " + str(n) + ": " + str(ultima_jogada[1]) + " cartas de valor " + str(i))
                 n += 1
+                o1 += 1
+                o2 += 1
+            for i in options_coringa_1:
+                print(" " + str(n) + ": " + str(ultima_jogada[1] - 1) + " cartas de valor " + str(i) + " + 1 carta coringa")
+                n += 1
+                o2 += 1
+            for i in options_coringa_2:
+                print(" " + str(n) + ": " + str(ultima_jogada[1] - 2) + " cartas de valor " + str(i) + " + 2 carta coringa")
+                n += 1
+            print(options_coringa_1)
             print("============================")
             print("")
-            print("\033[{subirLinhas}A\033[0K\r".format(subirLinhas= (5 + n)), end="", flush=True)
+            linhas = imprimir_registro(self)
+            print("\033[{subirLinhas}A\033[0K\r".format(subirLinhas= (5 + n + linhas)), end="", flush=True)
             selecionado = input("Opção: ")
             try:
                 selecionado = int(selecionado)
@@ -163,11 +194,39 @@ class Jogo:
                 continue
 
             if selecionado == 0:
-                return (-1, 0)
+                return (-1, 0, 0)
             
-            carta = list(options)[selecionado - 1]
             qnt = ultima_jogada[1]
-            return (carta, qnt)
+            coringasUsados = 0
+
+            print("(" + str(o1) + ")")
+            print("(" + str(o2) + ")")
+
+            if selecionado <= o1: # Não usou coringas junto a outras cartas
+                carta = list(options)[selecionado - 1]
+                for _ in range(qnt):
+                    self.minhaMao.remove(carta)
+            elif selecionado > o1 and selecionado <= o2: # selecionou opção com 1 coringa
+                print(options_coringa_1)
+                print(selecionado - o1 - 1)
+                carta = list(options_coringa_1)[selecionado - o1 - 1]
+                self.minhaMao.remove(13)
+                coringasUsados = 1
+                for _ in range(qnt - 1):
+                    self.minhaMao.remove(carta)
+            else: # usou 2 coringas
+                print(options_coringa_2)
+                print(o1)
+                print(o2)
+                print(selecionado - o2 - 1)
+                carta = list(options_coringa_2)[selecionado - o2 - 1]
+                self.minhaMao.remove(13)
+                self.minhaMao.remove(13)
+                coringasUsados = 2
+                for _ in range(qnt - 2):
+                    self.minhaMao.remove(carta)
+
+            return (carta, qnt, coringasUsados)
 
 
 def jogo_principal ():
@@ -191,7 +250,7 @@ def jogo_principal ():
         proximo_no_anel_config = jogadores[jogadoresIndex[0]]
 
 
-    tokenRing = TokenRing(From= anterior_no_anel_config["addr"], To= proximo_no_anel_config["addr"], port= int(minha_config["port"]))
+    tokenRing = TokenRing(From= anterior_no_anel_config["addr"], To= proximo_no_anel_config["addr"], myPort= int(minha_config["port"]), ToPort= int(proximo_no_anel_config["port"]))
     jogo = Jogo()
 
     if (minha_config is jogadores[1]):
@@ -259,11 +318,11 @@ def jogo_principal ():
             
         elif jogo.estado == Estado.MEU_TURNO:
             if len(jogo.registro) == 0:
-                (carta, qnt) = jogo.escolherJogada(primeiraJogada= True)
+                (carta, qnt, coringasUsados) = jogo.escolherJogada(primeiraJogada= True)
             elif jogo.registro[-1]["Contagem"] >= quantidadeJogadores:
-                (carta, qnt) = jogo.escolherJogada(primeiraJogada= True)
+                (carta, qnt, coringasUsados) = jogo.escolherJogada(primeiraJogada= True)
             else:
-                (carta, qnt) = jogo.escolherJogada()
+                (carta, qnt, coringasUsados) = jogo.escolherJogada()
             acontecimento = -1
             ultimoAJogar = {}
             contagem = 0
@@ -277,7 +336,7 @@ def jogo_principal ():
             info = {
                 "Quem" : socket.gethostname(),
                 "Acontecimento" : acontecimento,
-                "Jogada" : (carta, qnt),
+                "Jogada" : (carta, qnt, coringasUsados),
                 "Ultimo a jogar" : ultimoAJogar,
                 "Contagem" : contagem
             }

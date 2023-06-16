@@ -19,15 +19,16 @@ def message(Type, To: str, From: str, Data: dict):
     return message
 
 class TokenRing:
-    def __init__(self, From:str , To: str, port=7304):
+    def __init__(self, From:str , To: str, ToPort: int ,myPort=7304):
         self.hostnameFrom = From
         self.hostnameTo = To
         try:
             self.from_addr = socket.gethostbyname(self.hostnameFrom)
             self.to_addr = socket.gethostbyname(self.hostnameTo)
         except Exception as e:
-            pass #! [[[ PLEASEEE FIX MEEEE - i.e. put some logic in here ]]]
-        self.port = int(port)
+            raise Exception("Impossivel achar o host. Confira o dalmuti.ini")
+        self.to_port = ToPort
+        self.port = int(myPort)
         self.sendLock = Lock()
         self.messageQueue = Queue()
         self.have_token = False
@@ -88,7 +89,6 @@ class TokenRing:
                 if data["Type"] == Type.TOKEN:
                     self.have_token = True
                     continue
-                print("Guardando")
                 self.messageQueue.put(data["Data"], block=True)
 
             if data["From"] == self.my_addr:
@@ -101,10 +101,9 @@ class TokenRing:
                 self.__send(data)
 
     def __send(self, data: dict):
-        print(data)
         data_str = json.dumps(data)
         data_str = "<<<" + data_str + ">>>"
-        self.UDPsocket.sendto(data_str.encode("utf-8"), (self.to_addr, self.port))
+        self.UDPsocket.sendto(data_str.encode("utf-8"), (self.to_addr, self.to_port))
 
     def __recv(self):
         (data_str, recv_addr) = self.UDPsocket.recvfrom(2048)
