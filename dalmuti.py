@@ -171,7 +171,7 @@ def jogo_principal ():
 
     
     while (jogo.estado != Estado.FIM_DE_JOGO):
-        # imprimir_tela(jogo)
+        imprimir_tela(jogo)
 
         if jogo.estado == Estado.ARRUMANDO_BARALHO:
             baralho = list(split(gerar_baralho(), quantidadeJogadores))
