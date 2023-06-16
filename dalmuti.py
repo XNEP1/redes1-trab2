@@ -34,7 +34,7 @@ class Jogo:
         self.registro = []
 
 def inicializa_jogo ():
-    pass
+    return Jogo()
 
 def jogo_principal ():
     tokenRing = TokenRing(From="h1", To="h2")
@@ -46,9 +46,17 @@ def jogo_principal ():
     while (jogo.estado != jogo.FIM_JOGO):
         imprimir_tela()
         estado = jogo.estado
-        if estado == jogo.ESPERANDO:
+        if estado == Estados.ESPERANDO:
             pass # ...
-        elif estado == jogo.TURNO_OUTRO:
+        elif estado == Estados.TURNO_OUTRO:
+            pass # ...
+        elif estado == Estados.MEU_TURNO:
+            pass # ...
+        elif estado == Estados.VITORIA:
+            pass # ...
+        elif estado == Estados.DERROTA:
+            pass # ...
+        elif estado == Estados.FIM_DE_JOGO:
             pass # ...
         else:
             pass # ...
