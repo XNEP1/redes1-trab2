@@ -70,7 +70,7 @@ def recv_from (socket, buffer_size):
     # caso o tamanho do buffer não seja um valor (numérico) inteiro
     #
     (data_str, ip_addr) = socket.recvfrom(buffer_size)
-    return (data_str, ip_addr) # retorna tupla com mensagem, e IP de origrm
+    return (data_str, ip_addr) # retorna tupla com mensagem, e IP de origem
 
 class Estados(Enum):
     ESPERANDO = 0  # Esperando todo mundo se conectar
@@ -99,8 +99,6 @@ def jogo_principal ():
     tokenRing = TokenRing(From="h1", To="h2")
     jogo = inicializa_jogo()
     data = {}
-    
-    recebedor = {} #thread.init(repassador_de_mensagens, token_ring)
     
     while (jogo.estado != jogo.FIM_JOGO):
         imprimir_tela()
