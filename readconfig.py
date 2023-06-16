@@ -19,9 +19,9 @@ def read_config (filename):
                 try:
                     key_type = 0
                     # verifica se a chave contém 'addr' ou 'port' 
-                    if re.search('addr', key, re.IGNORECASE):
+                    if re.search('addr', key, re.IGNORECASE) != None:
                         key_type = 1
-                    elif re.search('port', key, re.IGNORECASE):
+                    elif re.search('port', key, re.IGNORECASE) != None:
                         key_type = 2
                     else: # caso não tenha, siga adiante:
                         continue
