@@ -26,16 +26,25 @@ def verifica_repeticao(lista, N):
 
 def imprimir_tela(jogo):
     print("\033[H\033[J") 
-    print("Está no turno de outro jogador")
-    print("============================")
-    print(jogo.minhamao)
-    print("============================")
-    print("Registro:")
-    for valor, qnt in jogo.registro:
-        if qnt == 0:
-            print("Passou a vez")
-        else:
-            print(f"Valor: {valor}, Quantidade: {qnt}")
+    if(jogo.estado == Estado.ESPERANDO):
+        print("Esperando conexão...")
+    elif (jogo.estado == Estado.ARRUMANDO_BARALHO):
+        print("Você é o lider da mesa")
+        print("Esperando conexão...")
+    elif (jogo.estado == Estado.TURNO_DE_OUTRO):
+        print("Está no turno de outro jogador")
+        print("Espere ele jogar")
+        print("============================")
+        print(jogo.minhaMao)
+        print("============================")
+        print("Registro:")
+        for valor, qnt in jogo.registro:
+            if qnt == 0:
+                print("Passou a vez")
+            else:
+                print(f"Valor: {valor}, Quantidade: {qnt}")
+    else:
+        pass
 
 def gerar_baralho():
     baralho = []
