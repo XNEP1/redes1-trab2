@@ -4,6 +4,7 @@ from threading import *
 from enum import Enum
 from random import shuffle
 import sys
+import time
 
 import readconfig
 from tokenring import *
@@ -15,8 +16,26 @@ def mensagem(Evento, Info = {}):
     }
     return message
 
-def imprimir_tela():
-    pass
+def verifica_repeticao(lista, N):
+    contagem = {}
+    for num in lista:
+        contagem[num] = contagem.get(num, 0) + 1
+        if contagem[num] == N:
+            return True
+    return False
+
+def imprimir_tela(jogo):
+    print("\033[H\033[J") 
+    print("Está no turno de outro jogador")
+    print("============================")
+    print(jogo.minhamao)
+    print("============================")
+    print("Registro:")
+    for valor, qnt in jogo.registro:
+        if qnt == 0:
+            print("Passou a vez")
+        else:
+            print(f"Valor: {valor}, Quantidade: {qnt}")
 
 def gerar_baralho():
     baralho = []
@@ -27,6 +46,10 @@ def gerar_baralho():
     baralho.insert(0, 0)
     shuffle(baralho)
     return baralho
+
+def split(a, n):
+    k, m = divmod(len(a), n)
+    return (a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))
 
         
 class Evento(Enum):
@@ -61,24 +84,104 @@ class Jogo:
         self.minhaMao = []
         self.registro = []
 
-def inicializa_jogo ():
-    return Jogo()
+    def escolherJogada(self, primeiraJogada=False):
+        ultima_jogada = []
+
+        if(primeiraJogada):
+            while(True):
+                print("Você é o primeiro a jogar.")
+                print("\n")
+                print("\n")
+                print("Sua mão: " + str(self.minhaMao))
+                print("\033[{subirLinhas}A\033[0K\r".format(3))
+                qnt = input("Escolha quantas cartas você irá jogar: ")
+                if not qnt.isdigit():
+                    print("\033[1;31mJogada Invalida")
+                    time.sleep(2)
+                    continue
+                if not verifica_repeticao(self.minhaMao, qnt):
+                    print("\033[1;31mJogada Invalida")
+                    time.sleep(2)
+                    continue
+
+                ultima_jogada = (13, qnt)
+
+        else:
+            ultima_jogada = self.registro[-1]
+
+        while(True):
+            print("\033[H\033[J") 
+            print("Qual será sua jogada?")
+            print("\n")
+            print("\n")
+            print("\n===========Opções===========")
+            filtered = list(filter(lambda valor: valor < ultima_jogada[0], self.minhaMao))
+            options = set(filter(lambda x: filtered.count(x) == ultima_jogada[1], filtered))
+            n = 0
+            print(" " + str(n) + ": Passar a vez" )
+            for i in options:
+                print(" " + str(n) + ": " + str(ultima_jogada[1]) + " cartas de valor " + str(i))
+                n += 1
+            print("============================")
+            print("\n")
+            print("\033[{subirLinhas}A\033[0K\r".format(5 + n))
+            selecionado = input("Opção: ")
+            if not selecionado.isdigit():
+                print("\033[1;31mJogada Invalida")
+                time.sleep(2)
+                continue
+            
+            selecionado = int(selecionado)
+            if not (selecionado >= 0 and selecionado <= n):
+                print("\033[1;31mJogada Invalida")
+                time.sleep(2)
+                continue
+
+            if selecionado == 0:
+                return (-1, 0)
+            
+            carta = list(options)[selecionado - 1]
+            qnt = ultima_jogada[1]
+            return (carta, qnt)
+
 
 def jogo_principal ():
-    tokenRing = TokenRing(From="h1", To="h2")
-    jogo = inicializa_jogo()
-    data = {}
+    minha_config = {}
+    proximo_no_anel_config = {}
+    baralho = []
 
+    jogadores = readconfig("dalmuti.ini")
+    jogadoresIndex = list(jogadores)
+    quantidadeJogadores = len(jogadoresIndex)
+    for i in jogadoresIndex[:-1]:
+        if (jogadores[i]["addr"] == socket.gethostbyname(socket.gethostname()) or jogadores[i]["addr"] == socket.gethostname()):
+            minha_config = jogadores[i]
+            proximo_no_anel_config = jogadores[i+1]
+
+    if (jogadores[jogadoresIndex[-1]]["addr"] == socket.gethostbyname(socket.gethostname()) or jogadores[jogadoresIndex[-1]]["addr"] == socket.gethostname()):
+        minha_config = jogadores[jogadoresIndex[-1]]["addr"]
+        proximo_no_anel_config = jogadores[0]
+
+
+    tokenRing = TokenRing(From= minha_config["addr"], To= proximo_no_anel_config["addr"], port= minha_config["port"])
+    jogo = Jogo()
+
+    if (minha_config is jogadores[0]):
+        jogo.estado = Estado.ARRUMANDO_BARALHO
+    else:
+        jogo.estado = Estado.ESPERANDO
 
     
     while (jogo.estado != Estado.FIM_DE_JOGO):
-        imprimir_tela()
+        imprimir_tela(jogo)
 
         if jogo.estado == Estado.ARRUMANDO_BARALHO:
-            while( not tokenRing.enviar(mensagem(Evento.PING), To=socket.gethostbyname(socket.gethostname()))):
+            baralho = list(split(gerar_baralho(), quantidadeJogadores))
+            while( not tokenRing.enviar(mensagem(Evento.PING), To= socket.gethostbyname(socket.gethostname()))):
                 pass
             _ = tokenRing.receber()
             tokenRing.enviar(mensagem(Evento.OK), To= "Broadcast") 
+            _ = tokenRing.receber()
             jogo.estado = Estado.INICIANDO_MASTER
             continue
 
@@ -89,22 +192,54 @@ def jogo_principal ():
             continue
 
 
+
+
         elif jogo.estado == Estado.INICIANDO_MASTER:
-            pass # ...
-        elif jogo.estado == Estado.INICIANDO_PLAYER:
-            mensagem = tokenRing.receber()
-            if( mensagem["Evento"] != Evento.DISTRIBUICAO ):
+            for i in jogadoresIndex:
+                tokenRing.enviar(mensagem(Evento.DISTRIBUICAO, baralho[i-1]), To= jogadores[i]["addr"])
+            mensagemR = tokenRing.receber()
+            if( mensagemR["Evento"] != Evento.DISTRIBUICAO ):
                 raise Exception("Broken Game Logic")
-            jogo.minhaMao = sorted( mensagem["Info"].copy() )
+            jogo.minhaMao = sorted( mensagemR["Info"].copy() )
+            jogo.estado = Estado.MEU_TURNO
+            continue
+
+        elif jogo.estado == Estado.INICIANDO_PLAYER:
+            mensagemR = tokenRing.receber()
+            if( mensagemR["Evento"] != Evento.DISTRIBUICAO ):
+                raise Exception("Broken Game Logic")
+            jogo.minhaMao = sorted( mensagemR["Info"].copy() )
+            jogo.estado = Estado.TURNO_DE_OUTRO
+            continue
             
 
 
 
         elif jogo.estado == Estado.TURNO_DE_OUTRO:
-            tokenRing.receber()
+            mensagemR = tokenRing.receber()
+            if( mensagemR["Evento"] == Evento.TOKEN ):
+                jogo.estado = Estado.MEU_TURNO
+                continue
+            if( mensagemR["Evento"] != Evento.JOGADA ):
+                raise Exception("Broken Game Logic")
+            jogo.registro.append( mensagemR["Info"].copy() )
+            continue
+            
         elif jogo.estado == Estado.MEU_TURNO:
-            pass # ...
+            (carta, qnt) = jogo.escolherJogada()
+            tokenRing.enviar(mensagem(Evento.JOGADA, {(carta, qnt)}), To= "Broadcast")
+            mensagemR = tokenRing.receber()
+            if( mensagemR["Evento"] != Evento.JOGADA ):
+                raise Exception("Broken Game Logic")
+            jogo.registro.append( mensagemR["Info"].copy().pop() )
 
+            if len(jogo.minhaMao) == 0:
+                jogo.estado = Estado.VITORIA
+            else:
+                tokenRing.enviar(mensagem(Evento.TOKEN), To= proximo_no_anel_config["addr"])
+                tokenRing.passarToken()
+                jogo.estado = Estado.TURNO_DE_OUTRO
+            continue
 
         elif jogo.estado == Estado.VITORIA:
             pass # ...
