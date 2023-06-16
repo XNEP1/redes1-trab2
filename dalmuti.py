@@ -2,6 +2,7 @@
 
 from threading import *
 from enum import Enum
+from random import shuffle
 import sys
 
 import readconfig
@@ -16,6 +17,15 @@ def mensagem(Evento, Info = {}):
 
 def imprimir_tela():
     pass
+
+def gerar_baralho():
+    baralho = []
+    for i in range(1,12):
+        for n in range(1, i):
+            baralho.insert(0, i)
+    shuffle(baralho)
+    return baralho
+
         
 class Evento(Enum):
     TOKEN = 0
@@ -23,7 +33,8 @@ class Evento(Enum):
     JOGADA = 2
     VITORIA = 3
     PING = 4 # Não faz nada, é só pra ver se a mensagem volta para você
-    OK = 4
+    OK = 5
+    DISTRIBUICAO = 6 # Você recebeu sua mão de cartas
 
 class Estado(Enum):
     ARRUMANDO_BARALHO = -2  # Você é o lider da mesa e está esperando todo mundo se conectar
