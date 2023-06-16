@@ -1,84 +1,51 @@
 #!/usr/bin/python3
 
-import socket # importa o módulo de sockets
 from threading import *
 from enum import Enum
-from queue import *
+from random import shuffle
+import sys
 
 import readconfig
-import tokenring
+from tokenring import *
 
+def mensagem(Evento, Info = {}):
+    message = {
+        "Evento" : Evento,
+        "Info" : Info.copy()
+    }
+    return message
 
-# Será lido do arquivo dalmuti.ini
-hostnameFrom = 'h1'  # Hostname de quem você recebe. Será convertido para o endereço IP
-hostnameTo = 'h1'  # Hostname de quem você envia. Será convertido para o endereço IP
-PORT = 7304
-have_token = False
-sendLock = Lock()
-messageQueue = Queue()
-my_addr = socket.gethostbyname(socket.gethostname())
+def imprimir_tela():
+    pass
 
-def receiveManager(UDPsocket):
-        while(True):
-            (data_str, ip_addr) = recv_from(UDPsocket, PORT)
-            if data["Event"] == "Token":
-                # Pega permissao de enviar mensagens
-                break
+def gerar_baralho():
+    baralho = []
+    for i in range(1,12):
+        for n in range(1, i):
+            baralho.insert(0, i)
+    shuffle(baralho)
+    return baralho
 
-            if data["Event"] == "Desligamento":
-                # Mensagem especial de desligamento da rede
-                # Passa pro proximo e da exit
-                # função_exit(0)
-                pass
-
-            if data["To"] == my_addr:
-                # Se a thread principal nao funcionar,
-                # essa thread trava aqui e a rede em anel trava
-                messageQueue.put(data_str, block=True)
-
-            if data["From"] == my_addr:
-                # Remove do anel
-                sendLock.release()
-            else:
-                send_to(UDPsocket, data_str, hostnameTo, PORT)
-
-def enviar(data):
-    if have_token == False:
-        return False
-    send_to(UDPsocket, json.dumps(data), next_adrr, PORT)
-    sendLock.acquire()
-    return True
-
-def receber():
-    return messageQueue.get(block=True)
-
-def setup_connection (porta):
-    #
-    #
-    #
-    UDPsocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-    UDPsocket.bind((my_addr, porta))
-    return UDPsocket
-
-
-def send_to (socket, msg, ip_addr, port):
-    # envia a mensagem pelo socket como uma string na codificação UTF-8
-    # para a porta e endereço IPv4 passados como parâmetro
-    socket.sendto(bytes(msg, "utf-8"), (ip_addr, port))
-
-def recv_from (socket, buffer_size):
-    # caso o tamanho do buffer não seja um valor (numérico) inteiro
-    #
-    (data_str, ip_addr) = socket.recvfrom(buffer_size)
-    return (data_str, ip_addr) # retorna tupla com mensagem, e IP de origrm
-
-class Estados(Enum):
-    ESPERANDO = 0  # Esperando todo mundo se conectar
-    TURNO_DE_OUTRO = 1
-    MEU_TURNO = 2
+        
+class Evento(Enum):
+    TOKEN = 0
+    DESLIGAMENTO = 1
+    JOGADA = 2
     VITORIA = 3
-    DERROTA = 4
-    FIM_DE_JOGO = 5
+    PING = 4 # Não faz nada, é só pra ver se a mensagem volta para você
+    OK = 5
+    DISTRIBUICAO = 6 # Você recebeu sua mão de cartas
+
+class Estado(Enum):
+    ARRUMANDO_BARALHO = -2  # Você é o lider da mesa e está esperando todo mundo se conectar
+    INICIANDO_MASTER = -1   # Você é o lider da mesa e está distribuindo cartas
+    ESPERANDO = 0           # Esperando todo mundo se conectar
+    INICIANDO_PLAYER = 1    # Recebendo as cartas, etc
+    TURNO_DE_OUTRO = 2
+    MEU_TURNO = 3
+    VITORIA = 4
+    DERROTA = 5
+    FIM_DE_JOGO = 6
 
 class Carta:
     def __init__(self, valor):
@@ -87,7 +54,7 @@ class Carta:
 class Jogo:
 
     def __init__(self):
-        self.estado = Estados.ESPERANDO
+        self.estado = Estado.ESPERANDO
         self.turno = ""
         self.minhaMao = []
         self.registro = []
@@ -99,23 +66,42 @@ def jogo_principal ():
     tokenRing = TokenRing(From="h1", To="h2")
     jogo = inicializa_jogo()
     data = {}
+
+
     
-    recebedor = {} #thread.init(repassador_de_mensagens, token_ring)
-    
-    while (jogo.estado != jogo.FIM_JOGO):
+    while (jogo.estado != Estado.FIM_DE_JOGO):
         imprimir_tela()
-        estado = jogo.estado
-        if estado == Estados.ESPERANDO:
+
+        if jogo.estado == Estado.ARRUMANDO_BARALHO:
+            while( not tokenRing.enviar(mensagem(Evento.PING), To=socket.gethostbyname(socket.gethostname()))):
+                pass
+            _ = tokenRing.receber()
+            tokenRing.enviar(mensagem(Evento.OK), To= "Broadcast") 
+            jogo.estado = Estado.INICIANDO_MASTER
+            continue
+
+        elif jogo.estado == Estado.ESPERANDO:
+            while( tokenRing.receber()["Evento"] != Evento.OK):
+                pass
+            jogo.estado = Estado.INICIANDO_PLAYER
+            continue
+
+
+        elif jogo.estado == Estado.INICIANDO_MASTER:
             pass # ...
-        elif estado == Estados.TURNO_OUTRO:
+        elif jogo.estado == Estado.INICIANDO_PLAYER:
             pass # ...
-        elif estado == Estados.MEU_TURNO:
+
+
+        elif jogo.estado == Estado.TURNO_DE_OUTRO:
             pass # ...
-        elif estado == Estados.VITORIA:
+        elif jogo.estado == Estado.MEU_TURNO:
             pass # ...
-        elif estado == Estados.DERROTA:
+        elif jogo.estado == Estado.VITORIA:
             pass # ...
-        elif estado == Estados.FIM_DE_JOGO:
+        elif jogo.estado == Estado.DERROTA:
+            pass # ...
+        elif jogo.estado == Estado.FIM_DE_JOGO:
             pass # ...
         else:
             pass # ...
