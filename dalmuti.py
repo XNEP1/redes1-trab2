@@ -41,8 +41,6 @@ def jogo_principal ():
     jogo = inicializa_jogo()
     data = {}
     
-    recebedor = {} #thread.init(repassador_de_mensagens, token_ring)
-    
     while (jogo.estado != jogo.FIM_JOGO):
         imprimir_tela()
         estado = jogo.estado
