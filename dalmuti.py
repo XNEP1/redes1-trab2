@@ -92,7 +92,12 @@ def jogo_principal ():
         elif jogo.estado == Estado.INICIANDO_MASTER:
             pass # ...
         elif jogo.estado == Estado.INICIANDO_PLAYER:
-            pass # ...
+            mensagem = tokenRing.receber()
+            if( mensagem["Evento"] != Evento.DISTRIBUICAO ):
+                raise Exception("Broken Game Logic")
+            jogo.minhaMao = sorted( mensagem["Info"].copy() )
+            
+
 
 
         elif jogo.estado == Estado.TURNO_DE_OUTRO:
