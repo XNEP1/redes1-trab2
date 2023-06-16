@@ -38,7 +38,6 @@ class TokenRing:
             
 
     def enviar(self, data: dict, To = "Broadcast") -> bool:
-        print("Enviando")
         if self.have_token == False:
             return False
         self.sendLock.acquire(blocking=False)
@@ -59,13 +58,12 @@ class TokenRing:
         self.have_token = True
         return
     
-    def passarToken(self):
-        data = {
-            "Event" : "Token"
-        }
-        self.__send(data)
+    def passarToken(self, To: str) -> bool:
+        if self.have_token == False:
+            return False
+        self.__send(message(Type.TOKEN, To, socket.gethostbyname(socket.gethostname()), {}))
         self.have_token = False
-        return
+        return True
 
     def __setup_connection(self):
         UDPsocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -80,33 +78,26 @@ class TokenRing:
     def __recvManager(self):
         while(True):
             (data, recv_addr) = self.__recv()
-            print("Recebendo")
             if recv_addr[0] != self.from_addr:
                 # Ignora
-                print("IGNORADO" + " " + str(recv_addr) + " " + str(self.from_addr))
-                continue
-
-            if data["Type"] == Type.TOKEN:
-                self.have_token = True
                 continue
 
             if data["To"] == self.my_addr or data["To"] == "Broadcast" or data["To"] == self.my_hostname:
                 # Se a thread principal nao funcionar,
                 # essa thread trava aqui e a rede em anel trava
+                if data["Type"] == Type.TOKEN:
+                    self.have_token = True
+                    continue
                 print("Guardando")
                 self.messageQueue.put(data["Data"], block=True)
 
             if data["From"] == self.my_addr:
                 # Remove do anel
-                print("removendo do anel")
                 try:
                     self.sendLock.release()
                 except ValueError:
-                    print("Erro do release")
                     pass
-                print("removido")
             else:
-                print("Reenviando")
                 self.__send(data)
 
     def __send(self, data: dict):

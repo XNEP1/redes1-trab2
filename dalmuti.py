@@ -24,25 +24,30 @@ def verifica_repeticao(lista, N):
             return True
     return False
 
+def imprimir_suaMao(jogo):
+    print("===========Sua Mão===========")
+    print(str(jogo.minhaMao)[1:-1])
+    print("============================")
+
 def imprimir_tela(jogo):
-    print("\033[H\033[J") 
+    print("\033[H\033[J", end="", flush=True) 
     if(jogo.estado == Estado.ESPERANDO):
         print("Esperando conexão...")
     elif (jogo.estado == Estado.ARRUMANDO_BARALHO):
         print("Você é o lider da mesa")
         print("Esperando conexão...")
     elif (jogo.estado == Estado.TURNO_DE_OUTRO):
+        imprimir_suaMao(jogo)
         print("Está no turno de outro jogador")
         print("Espere ele jogar")
-        print("============================")
-        print(jogo.minhaMao)
-        print("============================")
         print("Registro:")
-        for valor, qnt in jogo.registro:
-            if qnt == 0:
-                print("Passou a vez")
+        for r in jogo.registro:
+            if r["Acontecimento"] == Jogada.PASSOU:
+                print("{quem} passou a vez.".format(quem= r["Quem"]))
             else:
-                print(f"Valor: {valor}, Quantidade: {qnt}")
+                (valor, qnt) = r["Jogada"]
+                print("{quem} jogou {qnt} cartas de valor {valor}.".format(quem= r["Quem"], qnt= qnt, valor= valor))
+            # Falta o print de vitoria
     else:
         pass
 
@@ -69,6 +74,11 @@ class Evento(IntEnum):
     PING = 4 # Não faz nada, é só pra ver se a mensagem volta para você
     OK = 5
     DISTRIBUICAO = 6 # Você recebeu sua mão de cartas
+    PASSOU = 7 # O jogador passou a vez
+
+class Jogada(IntEnum):
+    CARTA = 0
+    PASSOU = 1
 
 class Estado(IntEnum):
     ARRUMANDO_BARALHO = -2  # Você é o lider da mesa e está esperando todo mundo se conectar
@@ -89,7 +99,6 @@ class Jogo:
 
     def __init__(self):
         self.estado = Estado.ESPERANDO
-        self.turno = ""
         self.minhaMao = []
         self.registro = []
 
@@ -98,51 +107,58 @@ class Jogo:
 
         if(primeiraJogada):
             while(True):
+                print("\033[H\033[J", end="", flush=True) 
+                imprimir_suaMao(self)
                 print("Você é o primeiro a jogar.")
-                print("\n")
-                print("\n")
-                print("Sua mão: " + str(self.minhaMao))
-                print("\033[{subirLinhas}A\033[0K\r".format(3))
+                print("")
+                print("")
+                print("\033[{subirLinhas}A\033[0K\r".format(subirLinhas=2), end="", flush=True)
                 qnt = input("Escolha quantas cartas você irá jogar: ")
-                if not qnt.isdigit():
-                    print("\033[1;31mJogada Invalida")
+                try:
+                    qnt = int(qnt)
+                except ValueError:
+                    print("\033[1;31mJogada Invalida\033[0m", end="", flush=True)
                     time.sleep(2)
                     continue
                 if not verifica_repeticao(self.minhaMao, qnt):
-                    print("\033[1;31mJogada Invalida")
+                    print("\033[1;31mJogada Invalida\033[0m", end="", flush=True)
                     time.sleep(2)
                     continue
 
                 ultima_jogada = (13, qnt)
+                break
 
         else:
-            ultima_jogada = self.registro[-1]
+            ultima_jogada = self.registro[-1]["Jogada"]
 
         while(True):
-            print("\033[H\033[J") 
+            print("\033[H\033[J", end="", flush=True) 
+            imprimir_suaMao(self)
             print("Qual será sua jogada?")
-            print("\n")
-            print("\n")
-            print("\n===========Opções===========")
+            print("")
+            print("")
+            print("===========Opções===========")
             filtered = list(filter(lambda valor: valor < ultima_jogada[0], self.minhaMao))
             options = set(filter(lambda x: filtered.count(x) == ultima_jogada[1], filtered))
             n = 0
             print(" " + str(n) + ": Passar a vez" )
+            n += 1
             for i in options:
                 print(" " + str(n) + ": " + str(ultima_jogada[1]) + " cartas de valor " + str(i))
                 n += 1
             print("============================")
-            print("\n")
-            print("\033[{subirLinhas}A\033[0K\r".format(5 + n))
+            print("")
+            print("\033[{subirLinhas}A\033[0K\r".format(subirLinhas= (5 + n)), end="", flush=True)
             selecionado = input("Opção: ")
-            if not selecionado.isdigit():
-                print("\033[1;31mJogada Invalida")
+            try:
+                selecionado = int(selecionado)
+            except ValueError:
+                print("\033[1;31mJogada Invalida\033[0m", end="", flush=True)
                 time.sleep(2)
                 continue
             
-            selecionado = int(selecionado)
             if not (selecionado >= 0 and selecionado <= n):
-                print("\033[1;31mJogada Invalida")
+                print("\033[1;31mJogada Invalida\033[0m", end="", flush=True)
                 time.sleep(2)
                 continue
 
@@ -235,24 +251,51 @@ def jogo_principal ():
             if( mensagemR["Evento"] == Evento.TOKEN ):
                 jogo.estado = Estado.MEU_TURNO
                 continue
-            if( mensagemR["Evento"] != Evento.JOGADA ):
+            if(mensagemR["Evento"] != Evento.JOGADA):
                 raise Exception("Broken Game Logic")
+            
             jogo.registro.append( mensagemR["Info"].copy() )
             continue
             
         elif jogo.estado == Estado.MEU_TURNO:
-            (carta, qnt) = jogo.escolherJogada()
-            tokenRing.enviar(mensagem(Evento.JOGADA, {(carta, qnt)}), To= "Broadcast")
+            if len(jogo.registro) == 0:
+                (carta, qnt) = jogo.escolherJogada(primeiraJogada= True)
+            elif jogo.registro[-1]["Contagem"] >= quantidadeJogadores:
+                (carta, qnt) = jogo.escolherJogada(primeiraJogada= True)
+            else:
+                (carta, qnt) = jogo.escolherJogada()
+            acontecimento = -1
+            ultimoAJogar = {}
+            contagem = 0
+            if qnt == 0:
+                acontecimento = Jogada.PASSOU
+                ultimoAJogar = jogo.registro[-1]["Ultimo a jogar"]
+                contagem = jogo.registro[-1]["Contagem"] + 1
+            else:
+                acontecimento = Jogada.CARTA
+                ultimoAJogar = socket.gethostname()
+            info = {
+                "Quem" : socket.gethostname(),
+                "Acontecimento" : acontecimento,
+                "Jogada" : (carta, qnt),
+                "Ultimo a jogar" : ultimoAJogar,
+                "Contagem" : contagem
+            }
+            tokenRing.enviar(mensagem(Evento.JOGADA, info), To= "Broadcast")
             mensagemR = tokenRing.receber()
             if( mensagemR["Evento"] != Evento.JOGADA ):
                 raise Exception("Broken Game Logic")
-            jogo.registro.append( mensagemR["Info"].copy().pop() )
+            jogo.registro.append( mensagemR["Info"].copy() )
 
             if len(jogo.minhaMao) == 0:
                 jogo.estado = Estado.VITORIA
+            elif contagem >= quantidadeJogadores:
+                tokenRing.enviar(mensagem(Evento.TOKEN), To= ultimoAJogar)
+                tokenRing.passarToken(To= ultimoAJogar)
+                jogo.estado = Estado.TURNO_DE_OUTRO
             else:
                 tokenRing.enviar(mensagem(Evento.TOKEN), To= proximo_no_anel_config["addr"])
-                tokenRing.passarToken()
+                tokenRing.passarToken(To= proximo_no_anel_config["addr"])
                 jogo.estado = Estado.TURNO_DE_OUTRO
             continue
 
