@@ -33,7 +33,7 @@ def read_config (filename):
                     
                     if (not i in hosts):
                         hosts[i] = {}
-                    else if (not isinstance(hosts[i], (dict))): # (dict,set)
+                    elif (not isinstance(hosts[i], (dict))): # (dict,set)
                         hosts[i] = {}
                     
                     if key_type == 1:
