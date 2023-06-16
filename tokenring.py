@@ -1,11 +1,11 @@
 import socket
 import json
 import sys
-from enum import Enum
+from enum import IntEnum
 from queue import Queue
-from threading import Thread, BoundedSemaphore
+from threading import Thread, Lock
 
-class Type(Enum):
+class Type(IntEnum):
     TOKEN = 0
     DATA = 1
 
@@ -28,22 +28,25 @@ class TokenRing:
         except Exception as e:
             pass #! [[[ PLEASEEE FIX MEEEE - i.e. put some logic in here ]]]
         self.port = int(port)
-        self.sendSemaphore = BoundedSemaphore(value=0)
+        self.sendLock = Lock()
         self.messageQueue = Queue()
         self.have_token = False
         self.my_addr = socket.gethostbyname(socket.gethostname())
+        self.my_hostname = socket.gethostname()
         self.UDPsocket = self.__setup_connection()
         self.__startReceiver()
             
 
     def enviar(self, data: dict, To = "Broadcast") -> bool:
+        print("Enviando")
         if self.have_token == False:
             return False
+        self.sendLock.acquire(blocking=False)
         self.__send(message(Type.DATA, To, socket.gethostbyname(socket.gethostname()), data))
-        if( not self.sendSemaphore.acquire(timeout=5) ):
+        if( not self.sendLock.acquire(timeout=5) ):
             try:
-                self.sendSemaphore.release()
-            except RuntimeError:
+                self.sendLock.release()
+            except ValueError:
                 pass
             return False
         return True
@@ -77,33 +80,37 @@ class TokenRing:
     def __recvManager(self):
         while(True):
             (data, recv_addr) = self.__recv()
-            print(data["Type"])
-            print(data["From"])
-            print(data["To"])
-            if recv_addr != self.from_addr:
+            print("Recebendo")
+            if recv_addr[0] != self.from_addr:
                 # Ignora
-                print("IGNORADO")
+                print("IGNORADO" + " " + str(recv_addr) + " " + str(self.from_addr))
                 continue
 
             if data["Type"] == Type.TOKEN:
                 self.have_token = True
                 continue
 
-            if data["To"] == self.my_addr or data["To"] == "Broadcast":
+            if data["To"] == self.my_addr or data["To"] == "Broadcast" or data["To"] == self.my_hostname:
                 # Se a thread principal nao funcionar,
                 # essa thread trava aqui e a rede em anel trava
+                print("Guardando")
                 self.messageQueue.put(data["Data"], block=True)
 
             if data["From"] == self.my_addr:
                 # Remove do anel
+                print("removendo do anel")
                 try:
-                    self.sendSemaphore.release()
-                except RuntimeError:
+                    self.sendLock.release()
+                except ValueError:
+                    print("Erro do release")
                     pass
+                print("removido")
             else:
+                print("Reenviando")
                 self.__send(data)
 
     def __send(self, data: dict):
+        print(data)
         data_str = json.dumps(data)
         data_str = "<<<" + data_str + ">>>"
         self.UDPsocket.sendto(data_str.encode("utf-8"), (self.to_addr, self.port))

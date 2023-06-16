@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from enum import Enum
+from enum import IntEnum
 import socket
 from random import shuffle
 import sys
@@ -61,7 +61,7 @@ def split(a, n):
     return (a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))
 
         
-class Evento(Enum):
+class Evento(IntEnum):
     TOKEN = 0
     DESLIGAMENTO = 1
     JOGADA = 2
@@ -70,7 +70,7 @@ class Evento(Enum):
     OK = 5
     DISTRIBUICAO = 6 # Você recebeu sua mão de cartas
 
-class Estado(Enum):
+class Estado(IntEnum):
     ARRUMANDO_BARALHO = -2  # Você é o lider da mesa e está esperando todo mundo se conectar
     INICIANDO_MASTER = -1   # Você é o lider da mesa e está distribuindo cartas
     ESPERANDO = 0           # Esperando todo mundo se conectar
@@ -156,6 +156,7 @@ class Jogo:
 
 def jogo_principal ():
     minha_config = {}
+    anterior_no_anel_config = {}
     proximo_no_anel_config = {}
     baralho = []
 
@@ -164,22 +165,29 @@ def jogo_principal ():
     quantidadeJogadores = len(jogadoresIndex)
     for i in jogadoresIndex[:-1]:
         if (jogadores[i]["addr"] == socket.gethostbyname(socket.gethostname()) or jogadores[i]["addr"] == socket.gethostname()):
+            anterior_no_anel_config = jogadores[jogadoresIndex[i-2]]
             minha_config = jogadores[i]
             proximo_no_anel_config = jogadores[i+1]
 
     if (jogadores[jogadoresIndex[-1]]["addr"] == socket.gethostbyname(socket.gethostname()) or jogadores[jogadoresIndex[-1]]["addr"] == socket.gethostname()):
+        anterior_no_anel_config = jogadores[jogadoresIndex[-2]]
         minha_config = jogadores[jogadoresIndex[-1]]
         proximo_no_anel_config = jogadores[jogadoresIndex[0]]
-    tokenRing = TokenRing(From= minha_config["addr"], To= proximo_no_anel_config["addr"], port= int(minha_config["port"]))
+
+
+    tokenRing = TokenRing(From= anterior_no_anel_config["addr"], To= proximo_no_anel_config["addr"], port= int(minha_config["port"]))
     jogo = Jogo()
 
     if (minha_config is jogadores[1]):
         jogo.estado = Estado.ARRUMANDO_BARALHO
+        tokenRing.criarToken()
     else:
         jogo.estado = Estado.ESPERANDO
 
     
     while (jogo.estado != Estado.FIM_DE_JOGO):
+        print("Estado = ")
+        print(jogo.estado)
         imprimir_tela(jogo)
 
         if jogo.estado == Estado.ARRUMANDO_BARALHO:
