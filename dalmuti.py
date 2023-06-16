@@ -159,21 +159,19 @@ def jogo_principal ():
             proximo_no_anel_config = jogadores[i+1]
 
     if (jogadores[jogadoresIndex[-1]]["addr"] == socket.gethostbyname(socket.gethostname()) or jogadores[jogadoresIndex[-1]]["addr"] == socket.gethostname()):
-        minha_config = jogadores[jogadoresIndex[-1]]["addr"]
-        proximo_no_anel_config = jogadores[0]
-
-
-    tokenRing = TokenRing(From= minha_config["addr"], To= proximo_no_anel_config["addr"], port= minha_config["port"])
+        minha_config = jogadores[jogadoresIndex[-1]]
+        proximo_no_anel_config = jogadores[jogadoresIndex[0]]
+    tokenRing = TokenRing(From= minha_config["addr"], To= proximo_no_anel_config["addr"], port= int(minha_config["port"]))
     jogo = Jogo()
 
-    if (minha_config is jogadores[0]):
+    if (minha_config is jogadores[1]):
         jogo.estado = Estado.ARRUMANDO_BARALHO
     else:
         jogo.estado = Estado.ESPERANDO
 
     
     while (jogo.estado != Estado.FIM_DE_JOGO):
-        imprimir_tela(jogo)
+        # imprimir_tela(jogo)
 
         if jogo.estado == Estado.ARRUMANDO_BARALHO:
             baralho = list(split(gerar_baralho(), quantidadeJogadores))
