@@ -96,9 +96,11 @@ def jogo_principal ():
 
 
         elif jogo.estado == Estado.TURNO_DE_OUTRO:
-            pass # ...
+            tokenRing.receber()
         elif jogo.estado == Estado.MEU_TURNO:
             pass # ...
+
+
         elif jogo.estado == Estado.VITORIA:
             pass # ...
         elif jogo.estado == Estado.DERROTA:
