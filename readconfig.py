@@ -6,7 +6,7 @@ def read_config (filename):
     config = configparser.ConfigParser()
     config.read(filename)
     
-    hosts = []
+    hosts = {}
     current_machine = None
     repeated_local_host = False
     

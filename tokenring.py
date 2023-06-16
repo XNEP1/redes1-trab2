@@ -22,8 +22,11 @@ class TokenRing:
     def __init__(self, From:str , To: str, port=7304):
         self.hostnameFrom = From
         self.hostnameTo = To
-        self.from_addr = socket.gethostbyname(self.hostnameFrom)
-        self.to_addr = socket.gethostbyname(self.hostnameTo)
+        try:
+            self.from_addr = socket.gethostbyname(self.hostnameFrom)
+            self.to_addr = socket.gethostbyname(self.hostnameTo)
+        except Exception as e:
+            pass
         self.port = port
         self.sendSemaphore = BoundedSemaphore(value=0)
         self.messageQueue = Queue()
@@ -99,10 +102,10 @@ class TokenRing:
     def __send(self, data: dict):
         data_str = json.dumps(data)
         data_str = "<<<" + data_str + ">>>"
-        socket.sendto(data_str.encode("utf-8"), (self.to_addr, self.port))
+        self.UDPsocket.sendto(data_str.encode("utf-8"), (self.to_addr, self.port))
 
     def __recv(self):
-        (data_str, recv_addr) = socket.recvfrom(2048)
+        (data_str, recv_addr) = self.UDPsocket.recvfrom(2048)
         data_str = data_str.decode("utf-8")
         data_str = data_str[3:-3]
         data = json.loads(data_str)
