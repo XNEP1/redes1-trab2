@@ -234,6 +234,11 @@ def jogo_principal ():
     jogadoresIndex = list(jogadores)
     quantidadeJogadores = len(jogadoresIndex)
     for i in jogadoresIndex[:-1]:
+        try:
+            socket.gethostbyname(jogadores[i]["addr"])
+        except Exception as e:
+            raise Exception("Impossivel achar o host. Confira o dalmuti.ini")
+
         if (jogadores[i]["addr"] == socket.gethostbyname(socket.gethostname()) or jogadores[i]["addr"] == socket.gethostname()):
             anterior_no_anel_config = jogadores[jogadoresIndex[i-2]]
             minha_config = jogadores[i]
