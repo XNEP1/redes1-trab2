@@ -126,6 +126,13 @@ enum estados {
     FIM_DE_JOGO
 };
 
+enum eventos {
+    TOKEN,
+    DESLIGAMENTO,
+    JOGADA,
+    VITORIA,
+};
+
 typedef struct messagem_t {
     sockaddr_in destino;
     char evento;      // diz o que aconteceu
