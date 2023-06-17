@@ -261,8 +261,6 @@ def jogo_principal ():
 
     
     while (jogo.estado != Estado.FIM_DE_JOGO):
-        print("Estado = ")
-        print(jogo.estado)
         imprimir_tela(jogo)
 
         if jogo.estado == Estado.ARRUMANDO_BARALHO:
