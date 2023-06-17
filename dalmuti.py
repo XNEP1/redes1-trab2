@@ -285,7 +285,8 @@ def jogo_principal ():
 
         elif jogo.estado == Estado.INICIANDO_MASTER:
             for i in jogadoresIndex:
-                tokenRing.enviar(mensagem(Evento.DISTRIBUICAO, baralho[i-1]), To= jogadores[i]["addr"])
+                if( not tokenRing.enviar(mensagem(Evento.DISTRIBUICAO, baralho[i-1]), To= jogadores[i]["addr"])):
+                    raise Exception("Connection Loss")
             mensagemR = tokenRing.receber()
             if( mensagemR["Evento"] != Evento.DISTRIBUICAO ):
                 raise Exception("Broken Game Logic")
@@ -343,7 +344,8 @@ def jogo_principal ():
                 "Ultimo a jogar" : ultimoAJogar,
                 "Contagem" : contagem
             }
-            tokenRing.enviar(mensagem(Evento.JOGADA, info), To= "Broadcast")
+            if( not tokenRing.enviar(mensagem(Evento.JOGADA, info), To= "Broadcast")):
+                raise Exception("Connection Loss")
             mensagemR = tokenRing.receber()
             if( mensagemR["Evento"] != Evento.JOGADA ):
                 raise Exception("Broken Game Logic")
@@ -352,12 +354,16 @@ def jogo_principal ():
             if len(jogo.minhaMao) == 0:
                 jogo.estado = Estado.VITORIA
             elif contagem >= quantidadeJogadores:
-                tokenRing.enviar(mensagem(Evento.TOKEN), To= ultimoAJogar)
-                tokenRing.passarToken(To= ultimoAJogar)
+                if( not tokenRing.enviar(mensagem(Evento.TOKEN), To= ultimoAJogar)):
+                    raise Exception("Connection Loss")
+                if( not tokenRing.passarToken(To= ultimoAJogar)):
+                    raise Exception("Token Error")
                 jogo.estado = Estado.TURNO_DE_OUTRO
             else:
-                tokenRing.enviar(mensagem(Evento.TOKEN), To= proximo_no_anel_config["addr"])
-                tokenRing.passarToken(To= proximo_no_anel_config["addr"])
+                if( not tokenRing.enviar(mensagem(Evento.TOKEN), To= proximo_no_anel_config["addr"])):
+                    raise Exception("Connection Loss")
+                if( not tokenRing.passarToken(To= proximo_no_anel_config["addr"])):
+                    raise Exception("Token Loss")
                 jogo.estado = Estado.TURNO_DE_OUTRO
             continue
 
@@ -370,7 +376,8 @@ def jogo_principal ():
             info = {
                 "Quem" : my_hostname,
             }
-            tokenRing.enviar(mensagem(Evento.VITORIA, info), To = "Broadcast")
+            if( not tokenRing.enviar(mensagem(Evento.VITORIA, info), To = "Broadcast")):
+                raise Exception("Connection Loss")
             _ = tokenRing.receber()
             jogo.estado = Estado.FIM_DE_JOGO
 
