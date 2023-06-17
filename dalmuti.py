@@ -372,6 +372,8 @@ def jogo_principal ():
 
         elif jogo.estado == Estado.DERROTA:
             print("\033[H\033[J", end="") 
+            imprimir_suaMao(jogo)
+            print("")
             print("\033[1;31m", end="")
             print(f"O JOGADOR {vencedorHostname} FOI O VENCEDOR!")
             print("\033[0m", end="", flush=True)
