@@ -393,8 +393,11 @@ def jogo_principal ():
         else:
             raise Exception("Erro desconhecido.")
     
-    print("Aperte qualquer botão para fechar o jogo...")
-    _ = input("")
+    try:
+        print("Aperte Ctrl-C para fechar o jogo...")
+        _ = input("")
+    except Exception as e:
+        pass
     sys.exit(0)
 
 jogo_principal()

@@ -31,6 +31,7 @@ class TokenRing:
         self.to_port = ToPort
         self.port = int(myPort)
         self.sendLock = Lock()
+        self.tokenLock = Lock()
         self.messageQueue = Queue()
         self.have_token = False
         self.my_addr = socket.gethostbyname(socket.gethostname())
@@ -41,7 +42,9 @@ class TokenRing:
 
     def enviar(self, data: dict, To = "Broadcast") -> bool:
         if self.have_token == False:
-            return False
+            self.tokenLock.acquire(blocking=False)
+            self.tokenLock.acquire(blocking=True)
+        
         self.sendLock.acquire(blocking=False)
         self.__send(message(Type.DATA, To, socket.gethostbyname(socket.gethostname()), data))
         if( not self.sendLock.acquire(timeout=5) ):
@@ -90,6 +93,7 @@ class TokenRing:
                 data["Confirmação"] = True
                 if data["Type"] == Type.TOKEN:
                     self.have_token = True
+                    self.tokenLock.release()
                     continue
                 self.messageQueue.put(data["Data"], block=True)
 
