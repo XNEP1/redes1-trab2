@@ -25,13 +25,16 @@ def verifica_repeticao(lista, N):
     return False
 
 def imprimir_suaMao(jogo):
+    print("\033[1;33m", end="")
     print("===========Sua Mão===========")
     print(str(jogo.minhaMao)[1:-1])
     print("============================")
+    print("\033[0m", end="", flush=True)
 
 def imprimir_registro(jogo) -> int: # linhas impressas
+    print("\033[47m\033[30m", end="")
     print("Registro:")
-    for r in jogo.registro:
+    for r in jogo.registro[::-1][:15]:
         if r["Acontecimento"] == Jogada.PASSOU:
             print("{quem} passou a vez.".format(quem= r["Quem"]))
         else:
@@ -42,7 +45,8 @@ def imprimir_registro(jogo) -> int: # linhas impressas
                 print("{quem} jogou {qnt} cartas de valor {valor} e mais 1 coringa.".format(quem= r["Quem"], qnt= qnt-1, valor= valor))
             elif coringasUsados == 2:
                 print("{quem} jogou {qnt} cartas de valor {valor} e mais 2 coringa.".format(quem= r["Quem"], qnt= qnt-2, valor= valor))
-    return (1 + len(jogo.registro))
+    print("\033[0m", end="", flush=True)
+    return (1 + len(jogo.registro[::-1][:15]))
 
 def imprimir_tela(jogo):
     print("\033[H\033[J", end="", flush=True) 
@@ -55,6 +59,7 @@ def imprimir_tela(jogo):
         imprimir_suaMao(jogo)
         print("Está no turno de outro jogador")
         print("Espere ele jogar")
+        print("")
         imprimir_registro(jogo)
             # Falta o print de vitoria
     else:
@@ -154,9 +159,9 @@ class Jogo:
             options_coringa_1 = []
             options_coringa_2 = []
             if self.minhaMao.count(13) > 0: # Aqueles com 1 e 2 coringas
-                options_coringa_1 = set(filter(lambda x: filtered.count(x) + 1 >= ultima_jogada[1], filtered))
+                options_coringa_1 = set(filter(lambda x: filtered.count(x) + 1 >= ultima_jogada[1] and filtered.count(x) != 0, filtered))
             if self.minhaMao.count(13) == 2: # só aqueles com 2 coringas
-                options_coringa_2 = set(filter(lambda x: filtered.count(x) + 2 >= ultima_jogada[1], filtered))
+                options_coringa_2 = set(filter(lambda x: filtered.count(x) + 2 >= ultima_jogada[1] and filtered.count(x) != 0, filtered))
             n = 0
             o1 = 0 # Usados pra saber as fronteiras entre os tipos de opções
             o2 = 0
@@ -186,7 +191,7 @@ class Jogo:
                 time.sleep(2)
                 continue
             
-            if not (selecionado >= 0 and selecionado <= n):
+            if not (selecionado >= 0 and selecionado < n):
                 print("\033[1;31mJogada Invalida\033[0m", end="", flush=True)
                 time.sleep(2)
                 continue
@@ -223,6 +228,7 @@ def jogo_principal ():
     anterior_no_anel_config = {}
     proximo_no_anel_config = {}
     baralho = []
+    vencedorHostname = ""
 
     jogadores = read_config("dalmuti.ini")
     jogadoresIndex = list(jogadores)
@@ -299,6 +305,10 @@ def jogo_principal ():
             if( mensagemR["Evento"] == Evento.TOKEN ):
                 jogo.estado = Estado.MEU_TURNO
                 continue
+            if( mensagemR["Evento"] == Evento.VITORIA ):
+                jogo.estado = Estado.DERROTA
+                vencedorHostname = mensagemR["Info"]["Quem"]
+                continue
             if(mensagemR["Evento"] != Evento.JOGADA):
                 raise Exception("Broken Game Logic")
             
@@ -348,23 +358,30 @@ def jogo_principal ():
             continue
 
         elif jogo.estado == Estado.VITORIA:
-            pass # ...
+            my_hostname = socket.gethostname()
+            print("\033[H\033[J", end="") 
+            print("\033[0;32m", end="")
+            print(f"PARABÉNS {my_hostname}! VOCÊ FOI O VENCEDOR!")
+            print("\033[0m", end="", flush=True)
+            info = {
+                "Quem" : my_hostname,
+            }
+            tokenRing.enviar(mensagem(Evento.VITORIA, info), To = "Broadcast")
+            _ = tokenRing.receber()
+            jogo.estado = Estado.FIM_DE_JOGO
+
         elif jogo.estado == Estado.DERROTA:
-            pass # ...
-        elif jogo.estado == Estado.FIM_DE_JOGO:
-            pass # ...
+            print("\033[H\033[J", end="") 
+            print("\033[1;31m", end="")
+            print(f"O JOGADOR {vencedorHostname} FOI O VENCEDOR!")
+            print("\033[0m", end="", flush=True)
+            jogo.estado = Estado.FIM_DE_JOGO
+
         else:
-            pass # ...
-
-# Exemplo: SERVIDOR RECEBENDO
-# UDPsocket = setup_connection(7304)
-# while(True):
-    # (data_str, ip_addr) = recv_from(UDPsocket, 2048)
-    # print(data_str.decode('utf-8'))
-
-
-# Exemplo: CLIENT ENVIANDO
-# UDPsocket = setup_connection(7304)
-# send_to(UDPsocket, "Ola", socket.gethostbyname(hostnameTo), 7304);   
+            raise Exception("Erro desconhecido.")
+    
+    print("Aperte qualquer botão para fechar o jogo...")
+    _ = input("")
+    sys.exit(0)
 
 jogo_principal()
