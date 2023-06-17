@@ -270,7 +270,8 @@ def jogo_principal ():
             while( not tokenRing.enviar(mensagem(Evento.PING), To= socket.gethostbyname(socket.gethostname()))):
                 pass
             _ = tokenRing.receber()
-            tokenRing.enviar(mensagem(Evento.OK), To= "Broadcast") 
+            if( not tokenRing.enviar(mensagem(Evento.OK), To= "Broadcast") ):
+                raise Exception("Connection Loss")
             _ = tokenRing.receber()
             jogo.estado = Estado.INICIANDO_MASTER
             continue

@@ -14,7 +14,8 @@ def message(Type, To: str, From: str, Data: dict):
         "Type" : Type,
         "To" : To,
         "From" : From,
-        "Data" : Data.copy()
+        "Data" : Data.copy(),
+        "Confirmação" : False
     }
     return message
 
@@ -86,6 +87,7 @@ class TokenRing:
             if data["To"] == self.my_addr or data["To"] == "Broadcast" or data["To"] == self.my_hostname:
                 # Se a thread principal nao funcionar,
                 # essa thread trava aqui e a rede em anel trava
+                data["Confirmação"] = True
                 if data["Type"] == Type.TOKEN:
                     self.have_token = True
                     continue
@@ -93,6 +95,8 @@ class TokenRing:
 
             if data["From"] == self.my_addr:
                 # Remove do anel
+                if(not data["Confirmação"]):
+                    raise Exception("Connection Error")
                 try:
                     self.sendLock.release()
                 except ValueError:
