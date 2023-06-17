@@ -93,7 +93,10 @@ class TokenRing:
                 data["Confirmação"] = True
                 if data["Type"] == Type.TOKEN:
                     self.have_token = True
-                    self.tokenLock.release()
+                    try:
+                        self.tokenLock.release()
+                    except RuntimeError:
+                        pass
                     continue
                 self.messageQueue.put(data["Data"], block=True)
 
